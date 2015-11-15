@@ -100,13 +100,13 @@ def OT_retrieve_file(filename, mode='rsync-ssh', keyfile='', args='', sshargs=''
         command = 'wget ' + args + ' -O ' + tmpname + ' ' + filename 
     elif mode=='scp' or mode=='ssh':
         command = 'scp '
-        if type(keyfile) == str and len(keyfile) != 0: command += '-i ' + keyfile
+        if isinstance(keyfile, basestring) and len(keyfile) != 0: command += '-i ' + keyfile
         comand += ' ' + args + ' ' + sshargs + ' ' + filename + ' ' + tmpname 
     elif mode == 'rsync':
         command = 'rsync ' + args + ' ' + filename + ' ' + tmpname
     elif mode == 'rsync-ssh':
         command = ('rsync -c -e \'ssh '
-                   + (' ', '-i ' + keyfile)[type(keyfile) == str and len(keyfile.strip()) != 0]
+                   + (' ', '-i ' + keyfile)[isinstance(keyfile, basestring) and len(keyfile.strip()) != 0]
                    + ' -ax -o ClearAllForwardings=yes ' + sshargs + '\' ' + args + ' '
                    + filename + ' ' + tmpname)
     else:

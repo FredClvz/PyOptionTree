@@ -41,7 +41,7 @@ class OTTypeInfo:
     """
 
     def __init__(self, matchkey, endmarker, getvalue, description, matchlength=-1):
-        if type(matchkey) == str:
+        if isinstance(matchkey, basestring):
             if matchkey[-1].isalnum():
                 self.matchfunc = lambda s: (s.startswith(matchkey) and
                                             (len(s) <= len(matchkey) or not s[len(matchkey)].isalnum()))
@@ -83,13 +83,13 @@ class OTFuncInfo(OTTypeInfo):
         description = self.name
 
         if len(args) > 2:
-            if type(args[2]) == str:
+            if isinstance(args[2], basestring):
                 description = args[2]
             elif type(args[2]) == bool:
                 self.evalimmediately = args[2]
 
         if len(args) > 3:
-            if type(args[3]) == str:
+            if isinstance(args[3], basestring):
                 description = args[3]
             elif type(args[3]) == bool:
                 self.evalimmediately = args[3]
@@ -771,7 +771,7 @@ class PyOptionTree:
             if type(arg) == list:
                 self.addCommandLineArgs(arg)
 
-            if type(arg) == str:
+            if isinstance(arg, basestring):
                 self.addOptionsFile(arg)
 
     #####################################################################
@@ -791,7 +791,7 @@ class PyOptionTree:
         """
 
         try:
-            if type(infile) == str:
+            if isinstance(infile, basestring):
                 # Preserve the current directory
                 cwd = os.path.abspath(os.getcwd())
 
@@ -1224,7 +1224,7 @@ class PyOptionTree:
         for key in keys:
             if type(key) == list or type(key) == tuple:
                 self.fetch(ot, *key)
-            elif type(key) == str:
+            elif isinstance(key, basestring):
                 self.set(key, ot(key))
     
     def printTree(self):
@@ -1314,7 +1314,7 @@ class PyOptionTree:
                 for k, ve in v.items():
                     updatehash(k)
                     updatehash(ve)
-            elif type(v) == str:
+            elif isinstance(v, basestring):
                 mhash.update(v)
             elif type(v) == float or type(v) == int:
                 mhash.update(str(v))
@@ -1459,7 +1459,7 @@ class PyOptionTree:
         # This assumes name is local; use __GetOrCreateBranch to reach this point
         if type(name) == tuple and len(name) == 1:
             name = name[0]
-        elif type(name) == str and name.find('[') != -1:
+        elif isinstance(name, basestring) and name.find('[') != -1:
             name = self.__Name2NameListIndices(name)
 
         if type(name) == tuple:
@@ -1487,7 +1487,7 @@ class PyOptionTree:
                  
     def __GetOrCreateBranch(self, namelist):
 
-        if type(namelist) == str:
+        if isinstance(namelist, basestring):
             namelist = self.__Name2NameList(namelist)
 
         if namelist == []:
@@ -1515,7 +1515,7 @@ class PyOptionTree:
                                                'Name \"' + self.__NameList2Name([namelist[0]]) + '\" already declared as a non-branch item.')
 
     def __CreateNewBranch(self, name):
-        if type(name) == str:
+        if isinstance(name, basestring):
             l = self.__Name2NameList(name)
             return self.__GetOrCreateBranch(l[:-1]).__NewBranch(self.__NameList2Name([l[-1]]))
         else:
@@ -1532,7 +1532,7 @@ class PyOptionTree:
                         recursionsleft=OPTTREE_MAXRECURSIONDEPTH,readyvalue=True):
         #  Does the real workings of retreiving a value.
 
-        if type(name) == str:
+        if isinstance(name, basestring):
             name = self.__Name2NameList(name)
 
         if name[0] == '/':
@@ -1671,7 +1671,7 @@ class PyOptionTree:
                     raise ote.PrependMessage(self.__LocString(action='Preparing Dictionary'))
                 else:
                     return default
-        elif type(v) == str:
+        elif isinstance(v, basestring):
             return self.__OriginalString(v)
         elif isinstance(v, OTSoftLink):
             try:
@@ -1841,7 +1841,7 @@ class PyOptionTree:
 
     def __NameList2Name(self,l):
 
-        if type(l) == tuple or type(l) == str:
+        if type(l) == tuple or isinstance(l, basestring):
             l = [l]
 
         if l == []:
@@ -1967,7 +1967,7 @@ class PyOptionTree:
 
                 #self.__dbprint('PARSEVALUE> Parsing $' + self.__TruncateErrorString(self.__ChS()[rl:]) + '$ As ' + t.description)
                 
-                if endpos == r[1] and type(t.endmarker) == str and len(t.endmarker) != 0: 
+                if endpos == r[1] and isinstance(t.endmarker, basestring) and len(t.endmarker) != 0:
                     raise PyOptionTreeParseError(self.__LocString(action = erroractionstr),
                                                  'Terminating \'' + t.endmarker + '\' not found.')
 
@@ -2154,7 +2154,7 @@ class PyOptionTree:
         
         files = [(t, (t,t))[type(t) != tuple] for t in valuelist]
         for t in files:
-            if len(t) != 2 or type(t[0]) != str or type(t[1]) != str:
+            if len(t) != 2 or not isinstance(t[0], basestring) or not isinstance(t[1], basestring):
                 raise PyOptionTreeParseError(branch.__LocString(action = "Importing Option File"),
                                              "Expected 2-tuple (file, name) or string, got \'" + str(t) +"\'" )
         
@@ -2365,7 +2365,7 @@ class PyOptionTree:
     def __Function_TimeStamp(self, branch, valuelist, loc):
         if valuelist == []:
             return time.strftime('%Y-%m-%d-%H-%M')
-        elif type(valuelist[0]) == str:
+        elif isinstance(valuelist[0], basestring):
             return time.strftime(valuelist[0])
         else:
             raise PyOptionTreeParseError(branch.__LocString(pos=loc, action='Creating Time Stamp'), 'Argument must be nonexistant or a string.')
@@ -2382,7 +2382,7 @@ class PyOptionTree:
         if type(valuelist) == list:
             return self.__Function_WrapListEval(lambda v: self.__Function_Unpickle(branch, v, loc), valuelist)
         
-        if type(valuelist) == str:
+        if isinstance(valuelist, basestring):
             try:
                 return cPickle.load(valuelist)
             except cPickle.PicklingError, pe:
@@ -2396,7 +2396,7 @@ class PyOptionTree:
         if type(valuelist) == list:
             return self.__Function_WrapListEval(lambda v: self.__Function_Unpickle_string(branch, v, loc), valuelist)
         
-        if type(valuelist) == str:
+        if isinstance(valuelist, basestring):
             try:
                 return cPickle.loads(valuelist)
             except cPickle.PicklingError, pe:
@@ -2418,7 +2418,7 @@ class PyOptionTree:
         ot = valuelist[0]
 
         for i, field in enumerate(valuelist[1:]):
-            if type(field) != str:
+            if not isinstance(field, basestring):
                 raise PyOptionTreeParseError(branch.__LocString(pos=loc, action='Expanding Outer Product'),
                                              'Argument ' + str(i+2) + ' not a string.')
             if not ot.isValid(field):
@@ -2480,7 +2480,7 @@ class PyOptionTree:
                 return ret[0]
             else:
                 return ret
-        elif type(valuelist) == str:
+        elif isinstance(valuelist, basestring):
 
             s =  valuelist
             sl = list(valuelist)
@@ -2516,7 +2516,7 @@ class PyOptionTree:
     def __OriginalString(self, a):
         # Translates a string back into its original form
 
-        if type(a) == str:
+        if isinstance(a, basestring):
             s = a
         elif type(a) == tuple:
             s = self.__ChS()[a[0]:a[1]]
@@ -2577,7 +2577,7 @@ class PyOptionTree:
         immunity = hasimmunity
         
         while pos < endpos:
-            if type(searchstack[-1]) == str and st[pos:].startswith(searchstack[-1]):
+            if isinstance(searchstack[-1], basestring) and st[pos:].startswith(searchstack[-1]):
                 match = True
                 jumplength = len(searchstack[-1])
             elif isinstance(searchstack[-1], OTSearchFunc) and searchstack[-1].matchfunc(st[pos:]):
@@ -2606,7 +2606,7 @@ class PyOptionTree:
         return endpos
 
     def __Len(self, s):
-        if type(s) == str:
+        if isinstance(s, basestring):
             return len(s)
         elif isinstance(s, OTSearchFunc):
             return s.matchlength
@@ -2753,7 +2753,7 @@ class PyOptionTree:
 
         
     def __Value2Str(self, level, v, indentlength): 
-        if type(v) == str:
+        if isinstance(v, basestring):
             # Escape all the special characters
             return ('\'' + self.__OriginalString(v).replace('\\', '\\\\').replace('\'', '\\\'') + '\'', [])
         elif type(v) == float or type(v) == int:
