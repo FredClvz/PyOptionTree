@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PyOptionTree: File Retrieval Functions</title>
+ 
+<link rel="stylesheet" href="main.css" type="text/css" media="all" />
+<link rel="stylesheet" href="print.css" type="text/css" media="print" />
+</head>
+<body>
+<div id="wrap">
+<div id="header">
+<h1>PyOptionTree</h1>
+</div>
+<div id="sidebar"><ul class="simple">
+<li><a class="reference" href="index.html">Home</a></li>
+<li><a class="reference" href="methods.html">Method Reference</a></li>
+<li><a class="reference" href="retrieval.html">File Retrieval</a></li>
+</ul></div>
+<div id="main" class="withleftmenu">
+<h1 class="title">File Retrieval Functions</h1>
+<p>This creates a list of functions for the PyOptionTree parser to
+make file retrieval easier.</p>
+<dl class="docutils">
+<dt>retrieve_file(filename, mode='rsync-ssh', keyfile='', args='', sshargs='')</dt>
+<dd><p class="first">Retrieves <tt class="docutils literal"><span class="pre">filename</span></tt> from a remote location using the protocol
+specified in <tt class="docutils literal"><span class="pre">mode</span></tt>.  If the retrieval mode uses ssh, optionally
+<tt class="docutils literal"><span class="pre">keyfile</span></tt> may give the location of the private key to use for
+authentication.  Additional parameters may be passed using
+<tt class="docutils literal"><span class="pre">args</span></tt>.If the arguments to the main retrieval routine and the
+ssh connection are seperate, as with rsync-ssh, additional
+parameters to the ssh routine may be supplied with <tt class="docutils literal"><span class="pre">sshargs</span></tt>.</p>
+<p><tt class="docutils literal"><span class="pre">filename</span></tt> is the same form accepted by the retrieval function;
+in this case, <tt class="docutils literal"><span class="pre">[[user&#64;]server:]file</span></tt>.  The following are all
+valid filenames:</p>
+<pre class="literal-block">
+hoytak&#64;cs.ubc.ca:/home/hoytak/myfile.opt
+cs.ubc.ca:/home/hoytak/myfile.opt
+/home/hoytak/myfile.opt
+</pre>
+<p>The following arguments for <tt class="docutils literal"><span class="pre">mode</span></tt> are supported:</p>
+<dl class="docutils">
+<dt>'url'</dt>
+<dd><p class="first">Uses wget to retrieve the file <tt class="docutils literal"><span class="pre">filename</span></tt>, which is given as a
+valid url.  wget supports HTTP, HTTPS, and FTP, but defaults to
+HTTP if <tt class="docutils literal"><span class="pre">filename</span></tt> has no suffix.  All of the following are
+valid urls:</p>
+<pre class="literal-block">
+www.cs.ubc.ca/~hoytak/myfile.dat
+http://www.cs.ubc.ca/~hoytak/myotherfile.dat
+ftp://www.myftpserver.com/myfile.dat
+https://www.myshttpserver.com/files/myfile.dat
+</pre>
+<p class="last">If the ftp server requires authentication, pass --user=&lt;user&gt;
+--password=&lt;password&gt; in args.</p>
+</dd>
+<dt>'scp' or 'ssh'</dt>
+<dd>If <tt class="docutils literal"><span class="pre">mode``='scp'</span> <span class="pre">or</span> <span class="pre">'ssh',</span> <span class="pre">then</span> <span class="pre">retrieve_file()</span> <span class="pre">attempts</span> <span class="pre">to</span>
+<span class="pre">retrieve</span> <span class="pre">``filename</span></tt> using the <tt class="docutils literal"><span class="pre">scp</span></tt> command, which copies
+the file using ssh.  If keyfile is given and not '' or None,
+authentication is first attempted using the key.  In this case,
+<tt class="docutils literal"><span class="pre">args</span></tt> and <tt class="docutils literal"><span class="pre">sshargs</span></tt> have the same effect, with <tt class="docutils literal"><span class="pre">sshargs</span></tt>
+possibly overriding <tt class="docutils literal"><span class="pre">args</span></tt>.</dd>
+<dt>'rsync'</dt>
+<dd>Attempts to retrieve the file using rsync.  rsync offers
+numerous advantages over scp, the main one being that, in the
+case of an already existing file, it copies only differences of
+files instead of the entire file and skips it if they are
+identical (as would likely be the case across successive
+runs). It can thus offer substantial speedup.  It also accepts
+numerous arguments, which can be passed to it through <tt class="docutils literal"><span class="pre">args</span></tt>.
+In this case, <tt class="docutils literal"><span class="pre">keyfile</span></tt> and <tt class="docutils literal"><span class="pre">sshargs</span></tt> are ignored.</dd>
+<dt>'rsync-ssh' (default)</dt>
+<dd>This is identical to 'rsync' except that it uses ssh for
+connections and is thus more secure than 'rsync'.  If
+<tt class="docutils literal"><span class="pre">keyfile</span></tt> is supplied and not '' or None, ssh attempts
+authentication using it. Parameters specific to rsync may be
+passed through <tt class="docutils literal"><span class="pre">args</span></tt> and parameters specific to the ssh
+connection may be passed with <tt class="docutils literal"><span class="pre">sshargs</span></tt>.</dd>
+</dl>
+<p>If <tt class="docutils literal"><span class="pre">mode</span></tt> is not in the above list, it raises a
+PyOptionTreeParseError exception.</p>
+<p>retrieve_file() returns the name of a temporary file in /tmp/ that
+the remote file is copied to.  The name of the temporary file is
+'_PyOpT_' plus a hash of the filename and is thus identical as
+long as filename remains the same.</p>
+<p>For example, in an option tree file,:</p>
+<pre class="literal-block">
+tree1 = loadfile(retrieve_file('hoytak&#64;cs.ubc.ca:/home/hoytak/myfile.dat',
+                               'rsync-ssh', '~/.ssh/mykey'))
+</pre>
+<p>copies myfile.dat to a local temporary file using rsync over an
+ssh connection authenticated with the private key
+'~/.ssh/mykey', then loads that file using the loadfile()
+function.</p>
+<p class="last">On error, it raises a PyOptionTreeRetreival exception and includes
+the output of the given command as the error message,</p>
+</dd>
+<dt>retrieve_optfile(filename, mode='rsync-ssh', keyfile='', args='', sshargs='')</dt>
+<dd>retrieve_optfile(...) is identical to retrieve_file(...), except
+that it returns a tuple that can be passed to optfile(...) that
+contains both the temporary file and <tt class="docutils literal"><span class="pre">filename</span></tt>, thus indicating
+<tt class="docutils literal"><span class="pre">filename</span></tt> as the source.  This is the prefered method with optfile()</dd>
+</dl>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PyOptionTree: PyOptionTree Hierarchical Parameter Parser</title>
+ 
+<link rel="stylesheet" href="main.css" type="text/css" media="all" />
+<link rel="stylesheet" href="print.css" type="text/css" media="print" />
+</head>
+<body>
+<div id="wrap">
+<div id="header">
+<h1>PyOptionTree</h1>
+</div>
+<div id="sidebar"><ul class="simple">
+<li><a class="reference" href="index.html">Home</a></li>
+<li><a class="reference" href="methods.html">Method Reference</a></li>
+<li><a class="reference" href="retrieval.html">File Retrieval</a></li>
+</ul></div>
+<div id="main" class="withleftmenu">
+<h1 class="title">PyOptionTree Hierarchical Parameter Parser</h1>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="69%" />
+</colgroup>
+<tbody valign="top">
+<tr><td>Author:</td>
+<td>Hoyt Koepke</td>
+</tr>
+<tr><td>Contact:</td>
+<td><script type="text/javascript">h='cs.ubc.ca';n='hoytak';e=n+'@'+h;document.write('<a href="mailto:'+e+'">'+e+'<\/a>');</script><noscript>hoytak [AT] cs.ubc.ca</noscript></td>
+</tr>
+<tr><td>Version:</td>
+<td>0.12</td>
+</tr>
+<tr><td>Date:</td>
+<td>2007-07-29</td>
+</tr>
+<tr><td>License:</td>
+<td>MIT</td>
+</tr>
+<tr><td>Download Site:</td>
+<td><a class="reference" href="http://sourceforge.net/projects/pyoptiontree">http://sourceforge.net/projects/pyoptiontree</a></td>
+</tr>
+</tbody>
+</table>
+<p>The PyOptionTree class reads a set of parameters from a text file,
+string, or from the command line into a hierarchical structure
+easily accessed by the program.  It provides an intuitive but
+sufficiently flexible way for researchers, programmers, or
+developers to incorporate user-set parameters into their program.
+The goal is to allow the user to <em>both</em> specify parameters <em>and</em>
+modify, control, structure, copy, and record them in a way that
+minimizes the effort on both the programming end and the execution
+end.</p>
+<p>With PyOptionTree, you can specify parameters to your program in
+text files, on the command line, passed as a string, set manually,
+or any combination thereof. For example, you could specify a
+default set of options in a text file but override them using
+command line arguments.</p>
+<p>To make this as user-friendly as possible, PyOptionTree uses a
+simple syntax -- similar to Python -- and a hierarchical tree
+structure to allow for more structured parameters than a flat list
+of option=value statements.  It also provides a number of
+operations -- including linking, copying, loading files,
+manipulating the parameters, and evaluating embedded Python code
+-- which are transparent to the program but allow the user to
+employ inheritance, duplication, etc. among branches of the
+tree. Of course, if you want to stick to a straight list of
+&lt;option&gt;=&lt;value&gt; pairs, PyOptionTree supports that.</p>
+<p>Additionally, PyOptionTree can print or save the current tree --
+or any branch thereof -- as a reloadable and easily edited option
+tree file that incorporates any type within the tree.  This makes
+it easy to log what parameters your program ran with and when.
+Furthermore, it makes it a natural way to incorporate a GUI into
+your program to edit the options or as a way of saving them.</p>
+<div class="section">
+<h1><a id="example" name="example">Example</a></h1>
+<p>Suppose a program needs to run a series of tasks, each with
+separate, but sometimes similar, parameters.  Additionally,
+suppose the user is only interested in running a subset of the
+tasks she has parameters written for.  This can be expressed as:</p>
+<pre class="literal-block">
+# This is a list of the tasks to run, each linked to their
+# definitions below.  This list will be returned to the user as
+# a list of subtrees, themselves PyOptionTrees.
+
+Tasks = [jog, eatcereal, eattoast]
+
+# The { } defines a subtree.  The subtree is itself an
+# PyOptionTree.
+jog = {
+  name = &quot;Go Jogging&quot;
+  action = &quot;jog&quot;
+  minutes = 30
+  location = &quot;park&quot;
+  # etc.
+}
+
+# This subtree won't show up in the above list
+ridebike = {
+  name = &quot;Ride the bike&quot;
+  action = &quot;ride bike&quot;
+  minutes = 90
+  location = &quot;trail by house&quot;
+  # etc.
+}
+
+eatcereal = {
+  name = &quot;Eat Breakfast&quot;
+  action = &quot;eat&quot;
+  food = &quot;cereal&quot;
+  location = &quot;kitchen&quot;
+  # etc.
+}
+</pre>
+<p>Now suppose all the parameters from 'eattoast' are the same as
+those of 'eatceral' except the value of the 'food' parameter.  We
+can copy the whole subtree and overwrite that parameter:</p>
+<pre class="literal-block">
+eattoast = copy(eatcereal)
+eattoast/food = &quot;toast&quot;
+</pre>
+<p>In our program, we could load and use the above with:</p>
+<pre class="literal-block">
+def runTests(opttreefile):
+    o = PyOptionTree(opttreefile)
+    for t in o.Tasks:      # According to the above definition,
+        runTest(t)         # t is a subtree (branch).
+
+def runTest(ot):
+    print 'Current Action: ', ot.name
+    # Decide what do based on ot.action...
+    # Do the action...
+</pre>
+<p>Now that we've looked at a quick example, let's move on to the
+good stuff.</p>
+</div>
+<div class="section">
+<h1><a id="syntax" name="syntax">Syntax</a></h1>
+<p>Every option file is simply a list of statements of the form
+&lt;name&gt; = &lt;value&gt;.  A single space or and end-delimiting character
+is sufficient to separate most &lt;value&gt; definitions from the next
+statement; if this presents a problem, a ';' may be used.</p>
+<p>The value can be a string, number, list, tuple, another name, a
+string of python code to evaluate, a tree node, or a function
+call.  The standard syntax for each value type is described below.</p>
+<p>Names can consist of any alphanumeric characters or underscores.
+Referencing names not in the local tree is done exactly like on
+*nix filesystem: local names are separated by'/', '..' moves up
+the tree, and starting with a '/' starts the referencing from the
+root node of the tree (be careful using this; the target changes
+between when the tree is read in as a subtree and when it is the
+base tree).  Thus:</p>
+<pre class="literal-block">
+../tree1/opt1 = 5
+</pre>
+<p>moves up one level and sets the value of opt1 inside tree1 to 5.
+If trees do not exist, they are created (so the above command
+would create 'tree1' if it didn't exist.)</p>
+<p>Assignments with the same name are always resolved to the last one
+specified.  In the case of trees; subsequent trees of the same
+name are merged into previous trees; otherwise, when reading in a
+tag, any previously stored value with that name is overwritten.</p>
+<div class="section">
+<h2><a id="comments" name="comments">Comments</a></h2>
+<p>PyOptionTree supports a number of possible comment strings.
+<tt class="docutils literal"><span class="pre">//</span></tt>, <tt class="docutils literal"><span class="pre">#</span></tt>, and <tt class="docutils literal"><span class="pre">%</span></tt> all comment out the rest of the line;
+everything between a <tt class="docutils literal"><span class="pre">/*</span></tt> and a <tt class="docutils literal"><span class="pre">*/</span></tt> is commented out (nested
+comments not supported).</p>
+</div>
+<div class="section">
+<h2><a id="escape-characters" name="escape-characters">Escape Characters</a></h2>
+<p>Any character preceded by a backslash is escaped out, meaning that
+any special functionality (like commenting out something or
+denoting a string) it might carry is ignored.</p>
+</div>
+<div class="section">
+<h2><a id="retrieving-values" name="retrieving-values">Retrieving Values</a></h2>
+<p>There are two methods for retrieving values.</p>
+<p>The first is using the <tt class="docutils literal"><span class="pre">get()</span></tt> method described in the method
+reference section below.  The simplest use takes a string with
+exactly the same syntax as a link.  The second is to retrieve the
+names as members of the tree.  Thus the following are identical:</p>
+<pre class="literal-block">
+ot.get('tree/subtree/element')
+ot.tree.subtree.element
+</pre>
+<p>The get() method offers two advantages.  First, it allows a
+default value to be specified; if an error occurs when retrieving
+the requested value, it returns the default instead of raising an
+exception.  Second, it allows a dictionary of variables to be
+passed to any eval() statement.</p>
+</div>
+</div>
+<div class="section">
+<h1><a id="basic-value-types" name="basic-value-types">Basic Value Types</a></h1>
+<p>Possible types of the &lt;value&gt; token:</p>
+<dl class="docutils">
+<dt>Strings</dt>
+<dd>Strings start with either &quot; or ' and end with the same character
+(same as Python).</dd>
+<dt>Numbers</dt>
+<dd>Numbers can include digits, a decimal mark (period), a minus sign,
+and E notation without spaces (e.g. 1.45e-5 or 14.1E56).</dd>
+<dt>Boolean</dt>
+<dd>Boolean values are denoted by the keywords 'True' and 'False'.</dd>
+<dt>None</dt>
+<dd>'None' (no quotes in file) or ';' return the null value None.</dd>
+<dt>Links</dt>
+<dd><p class="first">Links are simply the name of another node.  They can be thought
+of like soft links in a Linux file system; when the option tree
+retrieves a parameter whose value is a link, it returns whatever
+value the link (or chain of links) points to. (Note that
+recursive links will result in an PyOptionTreeResolution exception
+at runtime.)</p>
+<p>There are two issues to be aware of.  The first is that, if the
+name of the assignment resolves to another tree (e.g. 'tree1/o1
+= 1' or '../o1 = 1') links are always resolved starting from
+the location of the local assignment.  For example, the
+following is correct:</p>
+<pre class="literal-block">
+o1 = 1
+tree1/o2 = ../o1
+</pre>
+<p>but the following is not:</p>
+<pre class="literal-block">
+o1 = 1
+tree1/o2 = o1
+</pre>
+<p>This is to avoid confusion with how nodes are handled, i.e. so
+the statements 'tree1/o2 = ../o1' and 'tree1 = {o2 = ../o1}'
+are identical.</p>
+<p>The second issue is that links are only resolved when the user
+requests a value, thus in the following code:</p>
+<pre class="literal-block">
+o1 = 1
+o2 = o1
+o1 = 2
+</pre>
+<p class="last">retrieving o2 will return 2.  (See the copy() function for
+different behavior).</p>
+</dd>
+<dt>Lists</dt>
+<dd><p class="first">Lists, as in Python, start with '[' and end with ']' and
+contain a comma separated sequence of zero or more basic values.
+Nested lists are allowed.</p>
+<p>Links involving lists may contain references to specific
+elements, or sublists of elements.  The syntax is standard
+Python.  For example, the following are all valid, and produce
+the expected behavior:</p>
+<pre class="literal-block">
+l = [1,2,3,4,5]
+i1 = l[4]
+i2 = l[-1]
+l1 = l[1:2]
+l2 = l[:-1]
+</pre>
+<p>Additionally, assignments modifying individual elements are
+allowed:</p>
+<pre class="literal-block">
+l = [1,2,3,4,5]
+l[0] = 10
+</pre>
+<p class="last">Here, <tt class="docutils literal"><span class="pre">l</span></tt> would return <tt class="docutils literal"><span class="pre">[10,2,3,4,5]</span></tt></p>
+</dd>
+<dt>eval(...), &#64;(...)</dt>
+<dd><p class="first">Any valid Python statement that returns a value can be embedded
+in the option tree file using '&#64;' or 'eval' followed by
+parenthesis.  Values of other option tree names and local
+functions can be included in the statement using '$' followed
+by parenthesis containing a link to the value.  In the following
+code:</p>
+<pre class="literal-block">
+o1 = 1
+o2 = &#64;(1 + $(o1))
+</pre>
+<p>o1 will be 1 and o2 will be 2.</p>
+<p class="last">Evaluation is done when the value is retrieved, unless forced by
+now() (see below). Normally, the functions available are
+identical to those returned by the global() function; however,
+the user may supply a dictionary of additional functions and/or
+values when retrieving the value using the get() method.</p>
+</dd>
+<dt>Tuples</dt>
+<dd>Tuples have the same syntax as lists, except they start with '('
+and end with ')'.</dd>
+<dt>Subtrees</dt>
+<dd><p class="first">Subtrees are denoted with a pair of curly braces '{' '}'.
+In between is a list of &lt;name&gt; = &lt;value&gt; statements.  Thus in
+the following example:</p>
+<pre class="literal-block">
+tree1 = {
+  o1 = 5
+}
+</pre>
+<p>the user would access o1 as opttree.tree1.o1 or
+opttree.get(&quot;tree1/o1&quot;), assuming the option tree is in the
+opttree variable.</p>
+<p class="last">Note that including another option tree file using the optfile()
+function and simply putting the contents of that file inside
+curly braces result in the same option tree.</p>
+</dd>
+</dl>
+</div>
+<div class="section">
+<h1><a id="functions" name="functions">Functions</a></h1>
+<p>Functions take a comma separated sequence of basic types and
+return a value. The syntax is the same as Python (and a number of
+other languages). An example of the optfile() function (mentioned
+above and described below) is:</p>
+<blockquote>
+tree_from_file = optfile(&quot;othertree.opt&quot;)</blockquote>
+<p>There are a number of built in functions for basic operations, and
+the user may supply a list of additional functions which may be
+part of the parameter input.  See the documentation on the
+addUserFunctions() method for more information.</p>
+<p>Functions are normally evaluated when the user asks for the
+parameter they are referenced to, which allows the arguments to be
+links to items defined later. copy(), file(), now() and reref()
+are evaluated during the parsing, so any links given as arguments
+must point to items already defined.</p>
+<p>The built in functions are:</p>
+<dl class="docutils">
+<dt>add(arg1, ...), cat(arg1, ...), sum(arg1, ...)</dt>
+<dd>All three of these have identical behavior and add up the list
+of arguments using the + operator in Python.  Specifically, they
+calculate ((...((arg1 + arg2) + arg3) + ...) + argn).</dd>
+<dt>copy(arg1 [, arg2, ...])</dt>
+<dd><p class="first">copy() takes one or more arguments (usually links to other
+trees) and returns a copy of each. If one argument is given,
+copy() returns a value; if multiple arguments are given, it
+returns a list.  The copying is done by building an identical
+tree, making copies of all lists, tuples, dictionaries, and
+subtrees.  All relative links are modified so they point to the
+same elements they did originally (see reref() for alternate
+behavior).</p>
+<p>copy() and reref() are executed within the parsing, so all the
+arguments to copy must already be defined.</p>
+<p>copy() allows the user to modify elements in a duplicate tree
+without actually changing the value in the original tree.  For
+instance, in the following example:</p>
+<pre class="literal-block">
+tree1={o1 = 1}
+tree2=tree1
+tree2/o1 = 10
+</pre>
+<p>both <tt class="docutils literal"><span class="pre">tree1/o1</span></tt> and <tt class="docutils literal"><span class="pre">tree2/o1</span></tt> will hold the number 10.
+Using copy():</p>
+<pre class="literal-block">
+tree1={o1 = 1}
+tree2=copy(tree1)
+tree2/o1 = 10
+</pre>
+<p>results in <tt class="docutils literal"><span class="pre">tree1/o1</span> <span class="pre">=</span> <span class="pre">1</span></tt> and <tt class="docutils literal"><span class="pre">tree2/o1</span> <span class="pre">=</span> <span class="pre">10</span></tt>.</p>
+<p class="last">Note that copying one base tree and modifying specific elements
+gives inheritance-like behavior (as in the first example).</p>
+</dd>
+<dt>dict(arg1, ...)</dt>
+<dd>dict() takes a list of tuples and turns them into a python
+dictionary.  The list may either be a comma separated list, an
+actual list type, or a link to a list.</dd>
+<dt>optfile(arg1, ...)</dt>
+<dd><p class="first">optfile() reads a set of option tree parameters from file arg1
+and returns an option tree containing them.  arg1 may be either
+a string (or a link that ultimately resolves to a string)
+specifying the file, or a tuple containing two strings, the
+first being the file name and the second being the source name
+(used in error reporting and the tree description).</p>
+<p class="last">If multiple arguments are given, optfile() treats them as if
+they were continuations of the first file.  In other words, it
+loads all the parameters into the same option tree, with
+conflicts being resolved in favor of the last name specified.</p>
+</dd>
+<dt>now(arg1)</dt>
+<dd>Forces evaluation of any contained functions (including those
+pointed to by links) at parse time instead of at retrieval time.
+arg1 can be any basic value.</dd>
+<dt>range([start, ] end [, step])</dt>
+<dd><p class="first">range() produces a list of evenly spaced values.  If all
+arguments are given, it returns an ordered list of all numbers
+of the form <cite>start + i*step</cite> for i = 0,1,2,... such that <cite>start
+&lt;= n &lt; end</cite> if <cite>step</cite> is positive and <cite>start &gt;= n &gt; end</cite> if
+<cite>step</cite> is negative 0. If ommitted, <cite>start</cite> defaults to 0 and
+<cite>step</cite> to 1.  If all arguments are integers, all the elements in
+the list are integers, otherwise they are floating points.  The
+following are examples:</p>
+<pre class="last literal-block">
+range(5) = [0,1,2,3,4]
+range(-1,4) = [-1,0,1,2,3]
+range(1.5,0,-0.2) = [1.5,1.3, 1.1, 0.9,0.7,0.5,0.3,0.1]
+</pre>
+</dd>
+<dt>rep(string1, ...):</dt>
+<dd><p class="first">rep() replaces all the occurences of links in string1 and any
+additional strings with the string representation of their
+retrieved values.  Links are specified using <cite>${&lt;link&gt;}</cite> and are
+referenced from the current location.  Thus in the following
+example:</p>
+<pre class="literal-block">
+name = 'Hoyt'
+tree1 = {
+  author=rep('This example was written by ${../name}')
+}
+</pre>
+<p class="last"><cite>tree1/author</cite> would equal 'This example was written by Hoyt'.</p>
+</dd>
+<dt>reref(arg1 [, arg2, ...])</dt>
+<dd><p class="first">reref() is identical to copy() except that only links given as
+direct arguments are followed; all other relative links within
+the tree are left unmodified.  As an illustration of why this
+might be useful, consider the following, which specifies two
+lists of cities:</p>
+<pre class="literal-block">
+list1 = {
+  style1 = &quot;Bold&quot;
+  style2 = &quot;Normal&quot;
+
+  # here a list of (name, style) tuples
+  items = [(&quot;Colorado&quot;, style1),
+           (&quot;Denver&quot;, style2)]
+}
+
+list2 = {
+  style1 = &quot;Underlined&quot;
+  style2 = &quot;Tiny&quot;
+  items = reref(../List1/items)
+}
+</pre>
+<p>In this example, list1/items would return:</p>
+<pre class="literal-block">
+[(&quot;Colorado&quot;,&quot;Bold&quot;), (&quot;Denver&quot;, &quot;Normal&quot;)],
+</pre>
+<p>and list2/items would return:</p>
+<pre class="literal-block">
+[(&quot;Colorado&quot;,&quot;Underlined&quot;),(&quot;Denver&quot;, &quot;Tiny&quot;)]
+</pre>
+<p class="last">Note that the 'style1' link in the first item list points to
+list1/style1', whereas the reref() in 'list2' copies
+'list1/items' to 'list2/items' without modifying the
+hyperlinks in the original; thus they now point to
+'list2/style*'.</p>
+</dd>
+<dt>outer_product(opttree, field1, field2,...)</dt>
+<dd><p class="first">outerProduct() generates a list of new option trees based on
+opttree but with any lists in field1, field2, ... (string names
+of lists in opttree) reduced to scalars. Each resulting option
+tree has exaclty one combination of the elements in these lists,
+with the full list of trees having every combination.</p>
+<p>For example, in:</p>
+<pre class="literal-block">
+Foo = {
+  a = [1, 2]
+  b = [3, 4]
+  c = 12
+}
+
+Bar = outerProduct(Foo, 'a', 'b', 'c')
+</pre>
+<p>Bar would contain a list of four option trees:</p>
+<pre class="last literal-block">
+Bar[0] = {a = 1; b = 3; c = 12 }
+Bar[1] = {a = 1; b = 4; c = 12 }
+Bar[2] = {a = 2; b = 3; c = 12 }
+Bar[3] = {a = 2; b = 4; c = 12 }
+</pre>
+</dd>
+<dt>unpickle(arg1,...), unpickle_string(arg1,...)</dt>
+<dd><p class="first">unpickle() loads a python object from a pickle file and returns
+it.  unpickle_string(arg1, ...) is identical except that it
+assumes the pickle is imbedded within the option file in the
+string arg1, etc.  If multiple arguments are given, both
+functions return a list of objects.</p>
+<p class="last">On error, both functions throw a PyOptionTreeRetrievalError
+exception.</p>
+</dd>
+</dl>
+</div>
+<div class="section">
+<h1><a id="errors" name="errors">Errors</a></h1>
+<p>Errors are handled by exceptions.  They fall into three
+categories, parse errors, retrieval errors, and evaluation errors.
+Parse errors occur when parsing input and will raise a
+PyOptionTreeParseError exception.  Retrieval errors occur when the
+user asks for a non-existant value or a link within the tree
+can't be resolved; these raise a PyOptionTreeRetrievalError
+exception.  Evaluation Errors occur when code inside an evaluation
+statement raised an exception; these throw a
+PyOptionTreeEvaluationError exception.</p>
+<p>All three exceptions are derived from the base class
+PyOptionTreeException and return the error message when str() is
+used on an instance.</p>
+</div>
+<div class="section">
+<h1><a id="other-issues" name="other-issues">Other Issues</a></h1>
+<p>If you have any problems with the code, run into cases where it
+doesn't work, are confused by the documentation, or have a comment,
+please email me at the address above.  This project is still very much in
+beta test mode.</p>
+</div>
+<div class="section">
+<h1><a id="license-mit-license" name="license-mit-license">License (MIT License)</a></h1>
+<p>Copyright (c) 2007 Hoyt Koepke</p>
+<p>Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the &quot;Software&quot;), to deal in the Software without
+restriction, including without limitation the rights to use, copy,
+modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.</p>
+</div>
+</div>
+
+</div>
+</body>
+</html>

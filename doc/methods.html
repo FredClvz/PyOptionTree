@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PyOptionTree: PyOptionTree Method Reference</title>
+ 
+<link rel="stylesheet" href="main.css" type="text/css" media="all" />
+<link rel="stylesheet" href="print.css" type="text/css" media="print" />
+</head>
+<body>
+<div id="wrap">
+<div id="header">
+<h1>PyOptionTree</h1>
+</div>
+<div id="sidebar"><ul class="simple">
+<li><a class="reference" href="index.html">Home</a></li>
+<li><a class="reference" href="methods.html">Method Reference</a></li>
+<li><a class="reference" href="retrieval.html">File Retrieval</a></li>
+</ul></div>
+<div id="main" class="withleftmenu">
+<h1 class="title">PyOptionTree Method Reference</h1>
+<dl class="docutils">
+<dt>__call__(self, name, default='__uwpy3s6d03', vardict={})</dt>
+<dd>Identical to get().</dd>
+<dt>__contains__(self, name)</dt>
+<dd>Same as isValid(name)</dd>
+<dt>__copy__(self)</dt>
+<dd>Identical to copy().</dd>
+<dt>__eq__(self, ot)</dt>
+<dd>Tests the equality of two trees.  Currently uses hashes, which
+is slower than directly, but this will hopefully change soon.</dd>
+<dt>__init__(self, arg=None, userfunclist=[])</dt>
+<dd><p class="first">Initializes the option tree based on the type of arg. If arg
+is None or not given, it creates a new root node tree.  If arg
+is another PyOptionTree, then it creates an identical copy of
+arg.  If arg is a string, it assumes it is a filename and
+attempts to load the file name specified. If arg is a list,
+then it treats the list as a set of command line parameters
+(see addCommandLineArgs(...) for options; the lookforfiles
+parameter can be set by name here, e.g. lookforfiles=False)</p>
+<p class="last">userfunclist is a list of user defined functions which is
+passed to addUserFunctions() before any parsing is done.  See
+help on addUserFunctions() for more information.</p>
+</dd>
+<dt>__len__(self)</dt>
+<dd>Identical to size()</dd>
+<dt>__str__(self)</dt>
+<dd><p class="first">Returns a string representation of the tree.  The string can
+be passed back to the <tt class="docutils literal"><span class="pre">addString()</span></tt> method to reproduce the tree
+exactly, assuming any user-defined types that are stored in
+the tree can be pickled and unpickled properly.</p>
+<p>All of the basic types and any functions not evaluated at
+parse time are turned into their string representations.  Any
+types without a representation as a basic value are turned
+into a Python pickle using protocol=0, which can be manually
+edited.  To make the file more readable, these are all put at
+the end of the file with links within the option tree pointing
+to them.</p>
+<p>This string can be saved as a valid option tree file;
+reloading it produces an exact copy of the tree when saved,
+assuming any dependent files that are not loaded at parse time
+haven't changed (see the <tt class="docutils literal"><span class="pre">now()</span></tt> function to force
+evaluation at parse time).</p>
+<p class="last">Warning: If the given tree is not the root tree, any links
+pointing back to earlier nodes will be invalid.</p>
+</dd>
+<dt>addCommandLineArgs(self, arglist, lookforfiles=True)</dt>
+<dd><p class="first">Takes a list of parameters given on the command line, usually
+sys.argv[1:], and adds them, in order, to the option tree,
+overwriting any previous parameters by the same name.  If
+lookforfiles is True (default), then option tree files may be
+specified with -f &lt;filename&gt; or --file=&lt;filename&gt;.</p>
+<p>Command line options are given just like they are in files.</p>
+<p>On the command line, specify the option file with -f
+&lt;filename&gt;.  Multiple files can be specified; any options with
+the same name are overwritten by the last one specified.  All
+the options within the files can be overwritten on the command
+line by specifying these as long options, i.e.:</p>
+<pre class="literal-block">
+MyOption = &lt;value&gt;
+</pre>
+<p>in the option file can be overwritten by:</p>
+<pre class="literal-block">
+--MyOption=&lt;newvalue&gt;
+</pre>
+<p class="last">on the command line.</p>
+</dd>
+<dt>addOptionsFile(self, infile, sourcename='')</dt>
+<dd>Opens and parses the file given by infile and all the
+parameters within it to the current option tree. If infile is
+a string, addOptionsFile attempts to open the file and parse
+the contents. If infile is a open file, it attempts to read
+the contents using readlines() and parse them. If infile is a
+list, it adds each file in order.  All earlier definitions of
+a parameter are overwritten by later definitions, so be
+careful of adding multiple files.  The list may be names, open
+files, or a mixture of both.</dd>
+<dt>addString(self, s, sourcename='')</dt>
+<dd>Adds options located in a string s.  Optionally, the source
+may be provided with a sourcename used by the description()
+and fullName() methods and the error reporting functions.</dd>
+<dt>addUserFunctions(self, userfunclist)</dt>
+<dd><p class="first">Adds a list of user defined functions that help with the
+parsing, overriding any previously specified with the same
+name.  Each function will be passed the values given in the
+option tree (links will be followed and other functions will
+be evaluated).  Whatever it returns will be stored in that
+option parameter.</p>
+<p>Any exception propegates back up to the calling program.</p>
+<p>userfunclist is a list of 2 or 3 element tuples. The first
+element is the name of the function (str) and the second is
+the function itself.  Optionally, the third element may be
+True which signifies that the function should be evaluated
+when it's parsed instead of when the program requests it. An
+example list might be [('loadMyData', MyLoadFunction),
+('loadmyDataNow', MyLoadFunction, True)].</p>
+<p>Calling the function works just like in Python.  If the
+function is called &quot;foo&quot;, and the corresponding function is
+myFunc, then:</p>
+<pre class="literal-block">
+earlierparam = 343
+myparam = foo('bar', 2, earlierparam)
+</pre>
+<p class="last">in the parameter file will produce a call to myFunc with
+'bar', 2, and 343 as the arguments and store the return value
+in myparam.</p>
+</dd>
+<dt>branchList(self)</dt>
+<dd>Returns a list of the names of the branches of the local tree.</dd>
+<dt>branches(self)</dt>
+<dd>Returns a list of (&lt;name&gt;, &lt;value&gt;) tuples of all the branches
+in the tree.</dd>
+<dt>copy(self)</dt>
+<dd>Returns a copy of the tree.  If the tree has a parent, the
+copy would share the same parent and name as the original, but
+all name resolutions from the original node ignore this one.</dd>
+<dt>description(self)</dt>
+<dd>Returns a description of the tree formed from the tree names
+and input sources on the path from the root to this node.</dd>
+<dt>fetch(self, ot)</dt>
+<dd>Imports all the keys and their corresponding retrieved values
+from the option tree ot into this tree.</dd>
+<dt>fullTreeName(self)</dt>
+<dd>Returne the name of the tree along with sources.</dd>
+<dt>get(self, name, default='__uwpy3s6d03', vardict={}, recursionsleft=32)</dt>
+<dd><p class="first">Returns the parameter given by <tt class="docutils literal"><span class="pre">name</span></tt>.  If <tt class="docutils literal"><span class="pre">default</span></tt> is
+given and the key is not found, or an error occurs retrieving
+the key, <tt class="docutils literal"><span class="pre">get()</span></tt> returns the default value instead of
+raising an exception.</p>
+<p><tt class="docutils literal"><span class="pre">vardict</span></tt> is an optional dictionary of variables and/or
+functions that are used in addition to globals() when
+evaluating any of the Python code.</p>
+<p class="last"><tt class="docutils literal"><span class="pre">name</span></tt> is in the same format as links, namely
+<cite>tree1/subtree/parameter</cite>.  Referencing from the root of the
+tree when <tt class="docutils literal"><span class="pre">get()</span></tt> is called from a subtree is possible with
+a '/' prefix, and moving from a subtree to a parent tree is
+possible using '..'.</p>
+</dd>
+<dt>isValid(self, name, vardict={})</dt>
+<dd>Returns True if name exists and is valid (no errors) and False
+otherwise.</dd>
+<dt>itemList(self)</dt>
+<dd>Returns a list of the names of all the items in the local tree.</dd>
+<dt>items(self)</dt>
+<dd>Returns a list of (&lt;name&gt;, &lt;value&gt;) tuples of all the
+parameters and branches in the local tree.</dd>
+<dt>leafList(self)</dt>
+<dd>Returns a list of the names of all the parameters in the tree,
+excluding branches.</dd>
+<dt>leaves(self)</dt>
+<dd>Returns a list of (&lt;name&gt;, &lt;value&gt;) tuples of all the
+parameters in the tree, excluding branches.</dd>
+<dt>nameFromRoot(self)</dt>
+<dd>Returns the full name of the tree, referenced from the root.</dd>
+<dt>parent(self)</dt>
+<dd>Returns the parent of the tree, or <tt class="docutils literal"><span class="pre">None</span></tt> if it's the root.</dd>
+<dt>pathFromRoot(self)</dt>
+<dd>Returns the list of tree names from the root of the tree to
+this one, starting with '/'.</dd>
+<dt>printTree(self)</dt>
+<dd>Prints the string representation of the tree to stdout.  See
+the reference for <tt class="docutils literal"><span class="pre">__str__()</span></tt> for info about the format of the
+string.</dd>
+<dt>root(self)</dt>
+<dd>Returns the root tree.</dd>
+<dt>saveTree(self, filename)</dt>
+<dd>Saves the tree to an option tree file given by <tt class="docutils literal"><span class="pre">filename</span></tt>
+that can be reloaded and used.  Note that any existing file by
+the name of <tt class="docutils literal"><span class="pre">filename</span></tt> will be overwritten.</dd>
+<dt>saveTreeAsLog(self, fileprefix, filesuffix='opt')</dt>
+<dd><p class="first">Saves the tree to an option tree file that can be reloaded and
+used.  The name of the file is given by
+fileprefix-&lt;timestamp&gt;.filesuffix, and is thus useful for logging
+purposes.  The time stamp is in the format
+year-month-day-hour-min-sec, for example 2007-07-29-22-32-00,
+which indicates 10:32 pm on July 29, 2007.</p>
+<p class="last">Note that the results of a test could be put into the tree
+using the set() method and then saved as part of the log file.</p>
+</dd>
+<dt>set(self, name, value)</dt>
+<dd>Manually sets the value of an option. Returns a reference to
+the option tree.</dd>
+<dt>size(self)</dt>
+<dd>Returns the number of variables and branches in this node of the tree.</dd>
+<dt>strhash(self)</dt>
+<dd>Returns a string hash of alphanumeric characters of the option
+tree.  The current implementation is a little slow, as it
+retrieves all the values, thus it is immune to links and the
+like.</dd>
+<dt>string(self, includeheader=False)</dt>
+<dd>This is the same as __str__(), but it allows some extra
+options.</dd>
+<dt>treeName(self)</dt>
+<dd>Returns the name of the tree.</dd>
+<dt>update(self, udict)</dt>
+<dd>This function updates the current option tree with all the
+key, value pairs in <cite>udict</cite>.  The keys can be anything in link
+format, and the value pairs can be any type.</dd>
+</dl>
+</div>
+
+</div>
+</body>
+</html>
